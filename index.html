@@ -156,21 +156,20 @@ DELIMITER ;
 
 <p>In src/routes.php edit the endpoint. To use the Recommender function, simply establish a connection to the Recommender database and create a query object that uses the command “CALL getRecommendation ('$item',$user)”, where $user is the ID of the user you are looking to give recommendations to and $item is the name of his last bought item.</p>
 
-<pre><code>$app-&gt;get('/recommendations',
-    function($request,$response,$args) {
-        $db = $this-&gt;Recommender;
-        $user=2;
-        $item = 'Cat food';
-        $query = $db-&gt;query("CALL getRecommendation ('$item',$user)");
-        $strToReturn = '';
-
-        $returnArray=array();
-        foreach ($query as $row) {
-            $strToReturn .= $row['ProductName'] . ', ' . $row['COUNT(*)'] . '&lt;br/&gt;';
-            $returnArray[$row['ProductName']] = $row['COUNT(*)'];
-        }
-        return $response-&gt;write(json_encode($returnArray));
-    }   
+<pre><code>$app->get('/recommendations/[{userId}]/[{itemId}]',
+	function($request,$response,$args) {
+		$db = $this->Recommender;
+		$userId=$args['userId'];
+		$itemId = $args['itemId'];
+		$query = $db->query("CALL getRecommendation ('$itemId',$userId)");
+		$strToReturn = '';
+		$returnArray=array();
+		foreach ($query as $row) {
+			$strToReturn .= $row['ProductName'] . ', ' . $row['COUNT(*)'] . '<br/>';
+			$returnArray[$row['ProductName']] = $row['COUNT(*)'];
+		}
+		return $response->write(json_encode($returnArray));
+	}	
 );
 </code></pre>
 
