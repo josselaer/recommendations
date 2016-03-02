@@ -93,26 +93,26 @@ Values
 Add these lines of code to the same sql file.</p>
 
 <pre><code>DELIMITER // 
-	CREATE PROCEDURE 	`getRecommendation` (IN ProductIDParam int, UserIDParam int)
-	LANGUAGE SQL
-	DETERMINISTIC
-	SQL 				SECURITY DEFINER
-	COMMENT 			'This procedure shall return a table with Product Names and their count in the Transaction Table.'
+    CREATE PROCEDURE    `getRecommendation` (IN ProductNameParam varchar(100), UserIDParam int)
+    LANGUAGE SQL
+    DETERMINISTIC
+    SQL                 SECURITY DEFINER
+    COMMENT             'This procedure shall return a table with Product Names and their count in the Transaction Table.'
 BEGIN
-	SELECT		p2.ProductName, COUNT(*)
-	FROM		Transaction co2
-	INNER JOIN	Product p2
-	ON			co2.ProductID = p2.ProductID
-	WHERE		UserID IN (
-							SELECT		UserID
-							FROM		Transaction co 
-							INNER JOIN	Product p
-							ON			co.ProductID = p.ProductID
-							WHERE		p.ProductID = ProductIDParam 
-							AND 		UserID <> UserIDParam)
-	AND			p2.ProductID <> ProductIDParam
-	GROUP BY	p2.ProductName
-	ORDER BY	COUNT(*) DESC;
+    SELECT      p2.ProductName, COUNT(*)
+    FROM        Transaction co2
+    INNER JOIN  Product p2
+    ON          co2.ProductID = p2.ProductID
+    WHERE       UserID IN (
+                            SELECT      UserID
+                            FROM        Transaction co 
+                            INNER JOIN  Product p
+                            ON          co.ProductID = p.ProductID
+                            WHERE       ProductName = ProductNameParam 
+                            AND         UserID &lt;&gt; UserIDParam)
+    AND         p2.ProductName &lt;&gt; ProductNameParam
+    GROUP BY    p2.ProductName
+    ORDER BY    COUNT(*) DESC;
 END//
 DELIMITER ;
 </code></pre>
@@ -156,20 +156,20 @@ DELIMITER ;
 
 <p>In src/routes.php edit the endpoint. To use the Recommender function, simply establish a connection to the Recommender database and create a query object that uses the command “CALL getRecommendation ('$item',$user)”, where $user is the ID of the user you are looking to give recommendations to and $item is the name of his last bought item.</p>
 
-<pre><code>$app->get('/recommendations/[{userId}]/[{itemId}]',
-	function($request,$response,$args) {
-		$db = $this->Recommender;
-		$userId=$args['userId'];
-		$itemId = $args['itemId'];
-		$query = $db->query("CALL getRecommendation ('$itemId',$userId)");
-		$strToReturn = '';
-		$returnArray=array();
-		foreach ($query as $row) {
-			$strToReturn .= $row['ProductName'] . ', ' . $row['COUNT(*)'] . '<br/>';
-			$returnArray[$row['ProductName']] = $row['COUNT(*)'];
-		}
-		return $response->write(json_encode($returnArray));
-	}	
+<pre><code>$app-&gt;get('/recommendations',
+    function($request,$response,$args) {
+        $db = $this-&gt;Recommender;
+        $user=2;
+        $item = 'Cat food';
+        $query = $db-&gt;query("CALL getRecommendation ('$item',$user)");
+        $strToReturn = '';
+
+        $returnArray=array();
+        foreach ($query as $row) {
+            $returnArray[$row['ProductName']] = $row['COUNT(*)'];
+        }
+        return $response-&gt;write(json_encode($returnArray));
+    }   
 );
 </code></pre>
 
