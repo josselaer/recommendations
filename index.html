@@ -93,26 +93,26 @@ Values
 Add these lines of code to the same sql file.</p>
 
 <pre><code>DELIMITER // 
-    CREATE PROCEDURE    `getRecommendation` (IN ProductNameParam varchar(100), UserIDParam int)
-    LANGUAGE SQL
-    DETERMINISTIC
-    SQL                 SECURITY DEFINER
-    COMMENT             'This procedure shall return a table with Product Names and their count in the Transaction Table.'
+	CREATE PROCEDURE 	`getRecommendation` (IN ProductIDParam int, UserIDParam int)
+	LANGUAGE SQL
+	DETERMINISTIC
+	SQL 				SECURITY DEFINER
+	COMMENT 			'This procedure shall return a table with Product Names and their count in the Transaction Table.'
 BEGIN
-    SELECT      p2.ProductName, COUNT(*)
-    FROM        Transaction co2
-    INNER JOIN  Product p2
-    ON          co2.ProductID = p2.ProductID
-    WHERE       UserID IN (
-                            SELECT      UserID
-                            FROM        Transaction co 
-                            INNER JOIN  Product p
-                            ON          co.ProductID = p.ProductID
-                            WHERE       ProductName = ProductNameParam 
-                            AND         UserID &lt;&gt; UserIDParam)
-    AND         p2.ProductName &lt;&gt; ProductNameParam
-    GROUP BY    p2.ProductName
-    ORDER BY    COUNT(*) DESC;
+	SELECT		p2.ProductName, COUNT(*)
+	FROM		Transaction co2
+	INNER JOIN	Product p2
+	ON			co2.ProductID = p2.ProductID
+	WHERE		UserID IN (
+							SELECT		UserID
+							FROM		Transaction co 
+							INNER JOIN	Product p
+							ON			co.ProductID = p.ProductID
+							WHERE		p.ProductID = ProductIDParam 
+							AND 		UserID <> UserIDParam)
+	AND			p2.ProductID <> ProductIDParam
+	GROUP BY	p2.ProductName
+	ORDER BY	COUNT(*) DESC;
 END//
 DELIMITER ;
 </code></pre>
