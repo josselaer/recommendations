@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en-us">
+  <head>
+    <meta charset="UTF-8">
+    <title>Recommendations by josselaer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
+    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
+  </head>
+  <body>
+    <section class="page-header">
+      <h1 class="project-name">Recommendations</h1>
+      <h2 class="project-tagline"></h2>
+      <a href="https://github.com/josselaer/recommendations" class="btn">View on GitHub</a>
+      <a href="https://github.com/josselaer/recommendations/zipball/master" class="btn">Download .zip</a>
+      <a href="https://github.com/josselaer/recommendations/tarball/master" class="btn">Download .tar.gz</a>
+    </section>
+
+    <section class="main-content">
+      <h3>
+<a id="recommendations-intro" class="anchor" href="#recommendations-intro" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Recommendations Intro</h3>
+
+<p>There are several different types of recommendation systems. Item-to-Item based recommending systems bind items to different features. When a user buys a particular item, the recommender  application will return a list of the items which share those same features. Another method is a user-to-user based recommending system. In this method, users are paired with items selected by users who have selected the same products as the user. There are even more accurate methods of creating recommendations which use both user and item data, such as matrix factorization. However, we will cover how to implement a user-to-user based recommendation system for an e-commerce application.</p>
+
+<h3>
+<a id="creating-the-database" class="anchor" href="#creating-the-database" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Creating the Database</h3>
+
+<p>The database requires three main tables: User, Product, and Transaction. The Transaction table binds the user to the product they purchased.</p>
+
+<pre><code>CREATE DATABASE IF NOT EXISTS Recommender;
+USE Recommender;
+
+CREATE TABLE IF NOT EXISTS User(
+UserID int NOT NULL AUTO_INCREMENT,
+UserName varchar(50),
+PRIMARY KEY (UserID)
+);
+
+CREATE TABLE IF NOT EXISTS Product(
+ProductID int NOT NULL AUTO_INCREMENT,
+ProductName varchar(225),
+PRIMARY KEY (ProductID)
+);
+
+CREATE TABLE IF NOT EXISTS Transaction(
+TransactionID int NOT NULL AUTO_INCREMENT,
+UserID int NOT NULL,
+ProductID int NOT NULL,
+PRIMARY KEY (TransactionID),
+FOREIGN KEY (UserID) REFERENCES User(UserID),
+FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
+);
+</code></pre>
+
+<h3>
+<a id="insert-test-data" class="anchor" href="#insert-test-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Insert Test Data</h3>
+
+<p>Now that the database is created, it is time to load it with test data.</p>
+
+<pre><code>INSERT INTO User
+(UserName)
+Values
+('Jake Osselear'),
+('Stefan Popov'),
+('Aakash Patel');
+
+INSERT INTO Product
+(ProductName)
+Values
+('Cat Food'),
+('Carpet Cleaner'),
+('DVD Player');
+
+INSERT INTO Transaction
+(UserID, ProductID)
+Values
+(1,1),
+(2,1),
+(1,2);
+</code></pre>
+
+<p>Continue to add similar test data for better results. See our Recommendations Github repository at <code>https://github.com/josselaer/recommendations/</code> for our full test data.</p>
+
+<h3>
+<a id="define-procedure" class="anchor" href="#define-procedure" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Define Procedure</h3>
+
+<p>Now, we will define a procedure which will be stored in a database. This procedure will return recommendations and their weight in descending order.</p>
+
+<pre><code>DELIMITER // 
+    CREATE PROCEDURE    `getRecommendation` (IN ProductNameParam varchar(100), UserIDParam int)
+    LANGUAGE SQL
+    DETERMINISTIC
+    SQL                 SECURITY DEFINER
+    COMMENT             'This procedure shall return a table with Product Names and their count in the Transaction Table.'
+BEGIN
+    SELECT      p2.ProductName, COUNT(*)
+    FROM        Transaction co2
+    INNER JOIN  Product p2
+    ON          co2.ProductID = p2.ProductID
+    WHERE       UserID IN (
+                            SELECT      UserID
+                            FROM        Transaction co 
+                            INNER JOIN  Product p
+                            ON          co.ProductID = p.ProductID
+                            WHERE       ProductName = ProductNameParam 
+                            AND         UserID &lt;&gt; UserIDParam)
+    AND         p2.ProductName &lt;&gt; ProductNameParam
+    GROUP BY    p2.ProductName
+    ORDER BY    COUNT(*) DESC;
+END//
+DELIMITER ;
+</code></pre>
+
+<h3>
+<a id="map-database-in-srcsettingsphp" class="anchor" href="#map-database-in-srcsettingsphp" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Map Database in src/settings.php</h3>
+
+<p>This section of the tutorial focuses on using the Slim framework.</p>
+
+<p>Add These lines of code to your settings.php in the src directory.</p>
+
+<pre><code>'Recommender' =&gt; [
+            'username' =&gt;'testuser',
+            'password' =&gt; 'test',
+            'host' =&gt; 'localhost',
+            'dbname' =&gt; 'Recommender',
+            'db' =&gt; 'mysql',
+
+        ],
+</code></pre>
+
+<h3>
+<a id="create-recommender-container-function" class="anchor" href="#create-recommender-container-function" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Create Recommender Container Function</h3>
+
+<p>Create the ‘Recommender’ container function in src/dependencies.php, so you are able to connect to the database.</p>
+
+<pre><code>$container['Recommender'] = function ($c){
+    $settings = $c-&gt;get('settings')['Recommender'];
+
+    $connString = $settings['db'] . ':host=' . $settings['host'];
+    $connString .= ';dbname=' .$settings['dbname'] . ';charset=utf8mb4';
+
+    $db = new PDO($connString, $settings['username'], $settings['password']);
+
+    return $db; 
+};
+</code></pre>
+
+<h3>
+<a id="edit-the-endpoints-in-srcroutesphp" class="anchor" href="#edit-the-endpoints-in-srcroutesphp" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Edit the Endpoints in src/routes.php</h3>
+
+<p>In src/routes.php edit the endpoint. To use the Recommender function, simply establish a connection to the Recommender database and create a query object that uses the command “CALL getRecommendation ('$item',$user)”, where $user is the ID of the user you are looking to give recommendations to and $item is the name of his last bought item.</p>
+
+<pre><code>$app-&gt;get('/recommendations',
+    function($request,$response,$args) {
+        $db = $this-&gt;Recommender;
+        $user=2;
+        $item = 'Cat food';
+        $query = $db-&gt;query("CALL getRecommendation ('$item',$user)");
+        $strToReturn = '';
+
+        $returnArray=array();
+        foreach ($query as $row) {
+            $strToReturn .= $row['ProductName'] . ', ' . $row['COUNT(*)'] . '&lt;br/&gt;';
+            $returnArray[$row['ProductName']] = $row['COUNT(*)'];
+        }
+        return $response-&gt;write(json_encode($returnArray));
+    }   
+);
+</code></pre>
+
+<p>In our example, we iterate through the query object and map the key value pairs for the array to display. Then we return the array, encoded in json, using the json_encode method.</p>
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+
+<p>Jake Osselaer, Aakash Patel, Stefan Popov</p>
+
+      <footer class="site-footer">
+        <span class="site-footer-owner"><a href="https://github.com/josselaer/recommendations">Recommendations</a> is maintained by <a href="https://github.com/josselaer">josselaer</a>.</span>
+
+        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
+      </footer>
+
+    </section>
+
+  
+  </body>
+</html>
