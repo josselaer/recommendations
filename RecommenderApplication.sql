@@ -22,8 +22,10 @@ CREATE TABLE IF NOT EXISTS Transaction(
 	FOREIGN KEY 	(ProductID) REFERENCES Product(ProductID)
 );
 
+DROP PROCEDURE IF EXISTS getRecommendation;
+
 DELIMITER // 
-	CREATE PROCEDURE 	`getRecommendation` (IN ProductNameParam varchar(100), UserIDParam int)
+	CREATE PROCEDURE 	`getRecommendation` (IN ProductIDParam int, UserIDParam int)
 	LANGUAGE SQL
 	DETERMINISTIC
 	SQL 				SECURITY DEFINER
@@ -38,9 +40,9 @@ BEGIN
 							FROM		Transaction co 
 							INNER JOIN	Product p
 							ON			co.ProductID = p.ProductID
-							WHERE		ProductName = ProductNameParam 
+							WHERE		p.ProductID = ProductIDParam 
 							AND 		UserID <> UserIDParam)
-	AND			p2.ProductName <> ProductNameParam
+	AND			p2.ProductID <> ProductIDParam
 	GROUP BY	p2.ProductName
 	ORDER BY	COUNT(*) DESC;
 END//
