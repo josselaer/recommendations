@@ -29,6 +29,8 @@
 
 <p>The database requires three main tables: User, Product, and Transaction. The Transaction table binds the user to the product they purchased.</p>
 
+<p>Add these lines of code to a sql file.</p>
+
 <pre><code>CREATE DATABASE IF NOT EXISTS Recommender;
 USE Recommender;
 
@@ -57,7 +59,8 @@ FOREIGN KEY (ProductID) REFERENCES Product(ProductID)
 <h3>
 <a id="insert-test-data" class="anchor" href="#insert-test-data" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Insert Test Data</h3>
 
-<p>Now that the database is created, it is time to load it with test data.</p>
+<p>Now that the database is created, it is time to load it with test data.
+Add these lines of code to the same sql file.</p>
 
 <pre><code>INSERT INTO User
 (UserName)
@@ -86,7 +89,8 @@ Values
 <h3>
 <a id="define-procedure" class="anchor" href="#define-procedure" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Define Procedure</h3>
 
-<p>Now, we will define a procedure which will be stored in a database. This procedure will return recommendations and their weight in descending order.</p>
+<p>Now, we will define a procedure which will be stored in a database. This procedure will return recommendations and their weight in descending order.
+Add these lines of code to the same sql file.</p>
 
 <pre><code>DELIMITER // 
     CREATE PROCEDURE    `getRecommendation` (IN ProductNameParam varchar(100), UserIDParam int)
