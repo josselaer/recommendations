@@ -1,7 +1,7 @@
 <?php
 // Routes
 
-$app->get('/recommendations/[{userId}]/[{itemId}]',
+$app->get('/recommendations/{userId}/{itemId}',
 	function($request,$response,$args) {
 		$db = $this->Recommender;
 		$userId=$args['userId'];
